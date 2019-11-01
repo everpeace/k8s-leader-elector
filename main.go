@@ -14,6 +14,12 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth" // import all the auth plugins
 )
 
+var (
+	// LDFLAGS should overwrite these variables in build time.
+	Version  string
+	Revision string
+)
+
 func main() {
 	var name string
 	var namespace string
@@ -30,6 +36,8 @@ func main() {
 	taskCmd := flag.Args()
 	logf.SetLogger(klogr.New())
 	log := logf.Log.WithName("main")
+
+	log.Info("k8s-leader-elector", "Version", Version, "Revision", Revision)
 
 	config := config.GetConfigOrDie()
 

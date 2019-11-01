@@ -1,6 +1,9 @@
 # Build the manager binary
 FROM golang:1.12 as builder
 
+# LDFLAGS is defined as ARG(not ENV) because it is used only when build time.
+ARG LDFLAGS
+
 # Install tools required to build the project.
 # We need to run `docker build --no-cache .` to update those dependencies.
 RUN go get github.com/golang/dep/cmd/dep
