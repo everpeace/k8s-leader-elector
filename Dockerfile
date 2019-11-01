@@ -23,10 +23,9 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o k8s-leader-elector
 
 #
-# controller image
+# runtime image
 #
-# Copy the controller-manager into a thin image
-FROM ubuntu:18.04 AS controller
+FROM ubuntu:18.04 AS runtime
 WORKDIR /
 COPY --from=builder /go/src/k8s-leader-elector/k8s-leader-elector .
 ENTRYPOINT ["/k8s-leader-elector"]
