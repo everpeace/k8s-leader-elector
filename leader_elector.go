@@ -3,17 +3,18 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/exec"
+	"sync"
+	"time"
+
 	"github.com/go-logr/logr"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/leaderelection"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
-	"os"
-	"os/exec"
 	crleaderelection "sigs.k8s.io/controller-runtime/pkg/leaderelection"
 	"sigs.k8s.io/controller-runtime/pkg/recorder"
-	"sync"
-	"time"
 )
 
 type Role string
@@ -201,6 +202,7 @@ func (h *SingleRoundLeaderElector) Start(stop <-chan struct{}) error {
 	cancelable, cancel := context.WithCancel(context.Background())
 	err := h.startLeaderElection(cancelable)
 	if err != nil {
+		cancel()
 		return err
 	}
 	select {

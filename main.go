@@ -2,14 +2,15 @@ package main
 
 import (
 	"flag"
-	"k8s.io/klog"
-	"k8s.io/klog/klogr"
 	"os"
 	"os/exec"
+	"time"
+
+	"k8s.io/klog"
+	"k8s.io/klog/klogr"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/signals"
-	"time"
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth" // import all the auth plugins
 )
