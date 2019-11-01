@@ -72,18 +72,6 @@ func (h *SingleRoundLeaderElector) doTask(ctx context.Context) {
 	h.RLock()
 	defer h.RUnlock()
 
-	if len(h.taskCmd) <= 0 {
-		h.logger.Info("no task specified. just sleeping forever.")
-		return // it never completes.
-	}
-
-	var cmd *exec.Cmd
-	if len(h.taskCmd) == 1 {
-		cmd = exec.CommandContext(ctx, h.taskCmd[0])
-	} else {
-		cmd = exec.CommandContext(ctx, h.taskCmd[0], h.taskCmd[1:]...)
-	}
-
 	ler, err := h.lock.Get()
 	if err != nil {
 		msg := "error getting LeaderElectionRecord"
@@ -94,9 +82,26 @@ func (h *SingleRoundLeaderElector) doTask(ctx context.Context) {
 	environs := []string{
 		fmt.Sprintf("__LEADER_ELECTOR_ROLE=%s", h.role),
 		fmt.Sprintf("__LEADER_ELECTOR_MY_IDENTITY=%s", h.lock.Identity()),
-		fmt.Sprintf("__LEADER_ELECTOR_LEADER=%s", ler.HolderIdentity),
+		fmt.Sprintf("__LEADER_ELECTOR_LEADER_IDENTITY=%s", ler.HolderIdentity),
 		fmt.Sprintf("__LEADER_ELECTOR_ACQUIRE_UNIXTIME=%d", ler.AcquireTime.Unix()),
 	}
+
+	if len(h.taskCmd) <= 0 {
+		h.logger.Info("no task is specified.  just printing leader election results as environment variables.", "environs", environs)
+		for _, environ := range environs {
+			fmt.Printf("export %s\n", environ)
+		}
+		h.taskCompletionChan <- nil
+		return
+	}
+
+	var cmd *exec.Cmd
+	if len(h.taskCmd) == 1 {
+		cmd = exec.CommandContext(ctx, h.taskCmd[0])
+	} else {
+		cmd = exec.CommandContext(ctx, h.taskCmd[0], h.taskCmd[1:]...)
+	}
+
 	env := append(os.Environ(), environs...)
 	cmd.Env = env
 	cmd.Stdin = os.Stdin
