@@ -170,7 +170,9 @@ func (h *SingleRoundLeaderElector) startLeaderElection(ctx context.Context) erro
 					} else {
 						ler, err := myLock.Get()
 						if err != nil {
-							h.logger.Error(err, "error getting LeaderElectionRecord")
+							msg := "error getting LeaderElectionRecor"
+							h.logger.Error(err, "msg")
+							h.taskCompletionChan <- fmt.Errorf(msg)
 							return
 						}
 						observedLockIsFresh := ler.RenewTime.Add(time.Duration(ler.LeaseDurationSeconds) * time.Second).After(time.Now())
@@ -200,7 +202,7 @@ func (h *SingleRoundLeaderElector) startLeaderElection(ctx context.Context) erro
 		return err
 	}
 
-	// Start the leader elector process
+	// Start the leader election
 	go le.Run(ctx)
 	return nil
 }
