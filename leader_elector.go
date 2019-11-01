@@ -80,10 +80,12 @@ func (h *SingleRoundLeaderElector) doTask(ctx context.Context) {
 		return
 	}
 	environs := []string{
-		fmt.Sprintf("__LEADER_ELECTOR_ROLE=%s", h.role),
-		fmt.Sprintf("__LEADER_ELECTOR_MY_IDENTITY=%s", h.lock.Identity()),
-		fmt.Sprintf("__LEADER_ELECTOR_LEADER_IDENTITY=%s", ler.HolderIdentity),
-		fmt.Sprintf("__LEADER_ELECTOR_ACQUIRE_UNIXTIME=%d", ler.AcquireTime.Unix()),
+		fmt.Sprintf("__K8S_LEADER_ELECTOR_ROLE=%s", h.role),
+		fmt.Sprintf("__K8S_LEADER_ELECTOR_MY_IDENTITY=%s", h.lock.Identity()),
+		fmt.Sprintf("__K8S_LEADER_ELECTOR_LEADER_IDENTITY=%s", ler.HolderIdentity),
+		fmt.Sprintf("__K8S_LEADER_ELECTOR_ACQUIRE_TIME_RFC3339=%s", ler.AcquireTime.Format(time.RFC3339)),
+		fmt.Sprintf("__K8S_LEADER_ELECTOR_RENEW_TIME_RFC3339=%s", ler.RenewTime.Format(time.RFC3339)),
+		fmt.Sprintf("__K8S_LEADER_ELECTOR_LEADER_TRANSITIONS=%d", ler.LeaderTransitions),
 	}
 
 	if len(h.taskCmd) <= 0 {
