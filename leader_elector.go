@@ -7,6 +7,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/leaderelection"
+	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"os"
 	"os/exec"
 	crleaderelection "sigs.k8s.io/controller-runtime/pkg/leaderelection"
@@ -32,6 +33,7 @@ type SingleRoundLeaderElector struct {
 	logger             logr.Logger
 	taskCompletionChan chan error
 	role               Role
+	lock               resourcelock.Interface
 	taskCmd            []string
 	leaseDuration      time.Duration
 	renewDeadline      time.Duration
@@ -80,12 +82,26 @@ func (h *SingleRoundLeaderElector) doTask(ctx context.Context) {
 	} else {
 		cmd = exec.CommandContext(ctx, h.taskCmd[0], h.taskCmd[1:]...)
 	}
-	env := append(os.Environ(), fmt.Sprintf("__LEADER_ELECTOR_ROLE=%s", h.role))
+
+	ler, err := h.lock.Get()
+	if err != nil {
+		msg := "error getting LeaderElectionRecord"
+		h.logger.Error(err, msg)
+		h.taskCompletionChan <- fmt.Errorf(msg)
+		return
+	}
+	environs := []string{
+		fmt.Sprintf("__LEADER_ELECTOR_ROLE=%s", h.role),
+		fmt.Sprintf("__LEADER_ELECTOR_MY_IDENTITY=%s", h.lock.Identity()),
+		fmt.Sprintf("__LEADER_ELECTOR_LEADER=%s", ler.HolderIdentity),
+		fmt.Sprintf("__LEADER_ELECTOR_ACQUIRE_UNIXTIME=%d", ler.AcquireTime.Unix()),
+	}
+	env := append(os.Environ(), environs...)
 	cmd.Env = env
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	h.logger.Info("running specified task", "command", h.taskCmd, "role", h.role)
+	h.logger.Info("running specified task", "command", h.taskCmd, "extra_environs", environs)
 	if err := cmd.Start(); err != nil {
 		h.taskCompletionChan <- err
 	}
@@ -111,7 +127,9 @@ func (h *SingleRoundLeaderElector) startLeaderElection(ctx context.Context) erro
 	if err != nil {
 		return err
 	}
+	h.lock = myLock
 
+	h.logger.V(2).Info("my leader election identity", "identity", h.lock.Identity())
 	le, err := leaderelection.NewLeaderElector(leaderelection.LeaderElectionConfig{
 		Lock:          myLock,
 		LeaseDuration: h.leaseDuration,
