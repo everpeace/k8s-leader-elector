@@ -21,8 +21,12 @@ lint: fmt
 build: lint
 	CGO_ENABLED=0 go build -installsuffix netgo $(LDFLAGS) -a -o k8s-leader-elector
 
+.PHONY: build-no-lint
+build-no-lint:
+	CGO_ENABLED=0 go build -installsuffix netgo $(LDFLAGS) -a -o k8s-leader-elector
+
 .PHONY: docker-build docker-push
 docker-build:
-	docker build -t $(REPOSITORY_PREFIX)k8s-leader-elector:$(IMAGE_TAG) --build-arg LDFLAGS=$(LDFLAGS) --target runtime .
+	docker build -t $(REPOSITORY_PREFIX)k8s-leader-elector:$(IMAGE_TAG) --target runtime .
 docker-push:
 	docker push $(REPOSITORY_PREFIX)k8s-leader-elector:$(IMAGE_TAG)

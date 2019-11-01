@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"os/exec"
 	"time"
@@ -27,18 +28,26 @@ func main() {
 	var leaseDuration time.Duration
 	var renewDeadline time.Duration
 	var retryPeriod time.Duration
+	var versionFlag bool
+
 	klog.InitFlags(nil)
 	flag.StringVar(&name, "name", "k8s-leader-elector", "leader election name")
 	flag.StringVar(&namespace, "namespace", "", "leader election name")
 	flag.DurationVar(&leaseDuration, "lease-duration", 10*time.Second, "lease duration of leader lease")
 	flag.DurationVar(&renewDeadline, "renew-deadline", 5*time.Second, "deadline for renewing leader lease")
 	flag.DurationVar(&retryPeriod, "retry-period", 1*time.Second, "retry period for acquiring leader lease")
+	flag.BoolVar(&versionFlag, "version", false, "display version and exit")
 	flag.Parse()
 	taskCmd := flag.Args()
 	logf.SetLogger(klogr.New())
 	log := logf.Log.WithName("main")
 
-	log.Info("k8s-leader-elector", "Version", Version, "Revision", Revision)
+	if versionFlag {
+		fmt.Printf("k8s-leader-elector version=%s revision=%s\n", Version, Revision)
+		os.Exit(0)
+	}
+
+	log.Info("k8s-leader-elector", "version", Version, "revision", Revision)
 
 	config := config.GetConfigOrDie()
 
