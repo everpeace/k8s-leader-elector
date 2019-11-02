@@ -259,6 +259,14 @@
   version = "v3.0.0"
 
 [[projects]]
+  digest = "1:cf31692c14422fa27c83a05292eb5cbe0fb2775972e8f1f8446a71549bd8980b"
+  name = "github.com/pkg/errors"
+  packages = ["."]
+  pruneopts = "T"
+  revision = "ba968bfe8b2f7e042a574c888954fccecfa385b4"
+  version = "v0.8.1"
+
+[[projects]]
   digest = "1:0f775ea7a72e30d5574267692aaa9ff265aafd15214a7ae7db26bc77f2ca04dc"
   name = "github.com/spf13/pflag"
   packages = ["."]
@@ -679,7 +687,10 @@
 [[projects]]
   digest = "1:d14069dfa56161d0463bf00366d9b28e37f9fe9a4d4242b96119023ead196bca"
   name = "k8s.io/klog"
-  packages = ["."]
+  packages = [
+    ".",
+    "klogr",
+  ]
   pruneopts = "T"
   revision = "d98d8acdac006fb39831f1b25640813fef9c314f"
   version = "v0.3.3"
@@ -719,6 +730,7 @@
   analyzer-version = 1
   input-imports = [
     "github.com/go-logr/logr",
+    "github.com/pkg/errors",
     "k8s.io/api/core/v1",
     "k8s.io/apimachinery/pkg/runtime",
     "k8s.io/client-go/kubernetes",
@@ -727,7 +739,10 @@
     "k8s.io/client-go/plugin/pkg/client/auth",
     "k8s.io/client-go/rest",
     "k8s.io/client-go/tools/leaderelection",
+    "k8s.io/client-go/tools/leaderelection/resourcelock",
     "k8s.io/client-go/tools/record",
+    "k8s.io/klog",
+    "k8s.io/klog/klogr",
     "sigs.k8s.io/controller-runtime/pkg/client/config",
     "sigs.k8s.io/controller-runtime/pkg/leaderelection",
     "sigs.k8s.io/controller-runtime/pkg/recorder",

@@ -49,10 +49,10 @@ func main() {
 
 	log.Info("k8s-leader-elector", "version", Version, "revision", Revision)
 
-	config := config.GetConfigOrDie()
+	clientConfig := config.GetConfigOrDie()
 
 	elector, err := NewSingleRoundLeaderElector(
-		config, log.WithName("leader-elector"),
+		clientConfig, log.WithName("leader-elector"),
 		name, namespace,
 		taskCmd,
 		leaseDuration, renewDeadline, retryPeriod,

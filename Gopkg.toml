@@ -5,6 +5,10 @@
   name="sigs.k8s.io/controller-runtime"
   version="v0.1.12"
 
+[[constraint]]
+  name="github.com/pkg/errors"
+  version="v0.8.1"
+
 [[override]]
   name="github.com/go-logr/logr"
   version="v0.1.0"
