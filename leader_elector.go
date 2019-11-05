@@ -101,10 +101,13 @@ func (h *SingleRoundLeaderElector) startLeaderElection(ctx context.Context) erro
 		// - onNewLeader should detect follower ship
 		Callbacks: leaderelection.LeaderCallbacks{
 			OnStartedLeading: func(_ctx context.Context) {
-				h.RLock()
-				defer h.RUnlock()
+				h.Lock()
+				defer h.Unlock()
 				switch h.role {
-				case RoleLeader:
+				case RoleLeader, RoleUnknown:
+					if h.role == RoleUnknown {
+						h.role = RoleLeader
+					}
 					h.logger.Info("I'm elected as the leader", "newLeaderIdentity", h.myIdentity(), "myIdentity", h.myIdentity())
 					go h.doTask(_ctx)
 				case RoleFollower:
@@ -117,25 +120,35 @@ func (h *SingleRoundLeaderElector) startLeaderElection(ctx context.Context) erro
 					)
 					h.taskCompletionChan <- err
 				default:
-					err := errors.New("callback=OnStartedLeading was called all though my role hasn't been decided")
+					err := errors.New("callback=OnStartedLeading was called all though my role is invalid.")
 					h.logger.Error(
 						err, "this should never happen. maybe bug.",
 						"role", h.role,
 					)
+					h.taskCompletionChan <- err
 				}
 			},
 			OnStoppedLeading: func() {
 				h.RLock()
 				defer h.RUnlock()
-				if h.role == RoleLeader {
+				switch h.role {
+				case RoleLeader:
 					// my leadership lost. stopping.
 					h.taskCompletionChan <- errors.New("lost my leadership")
+				case RoleUnknown:
+					err := errors.New("leader election finished although my role hasn't decided")
+					h.logger.Error(
+						err, "callback=OnStartedLeading was called all though my role is Unknown.",
+						"role", h.role,
+					)
+					h.taskCompletionChan <- err
+				default:
+					err := errors.New(fmt.Sprintf("callback=OnStoppedLeading was called all though my role is %s", h.role))
+					h.logger.Error(
+						err, "this should never happen. maybe bug.",
+						"role", h.role,
+					)
 				}
-				err := errors.New("callback=OnStoppeddLeading was called all though my role is not Leader")
-				h.logger.Error(
-					err, "this should never happen. maybe bug.",
-					"role", h.role,
-				)
 			},
 			OnNewLeader: func(newLeaderIdentity string) {
 				h.Lock()
@@ -255,7 +268,7 @@ func (h *SingleRoundLeaderElector) Start(stop <-chan struct{}) error {
 }
 
 func (h *SingleRoundLeaderElector) observedLockIsFresh(ler *resourcelock.LeaderElectionRecord) bool {
-	return ler.RenewTime.Add(time.Duration(ler.LeaseDurationSeconds) * time.Second).After(time.Now())
+	return time.Now().Before(ler.RenewTime.Add(time.Duration(ler.LeaseDurationSeconds) * time.Second))
 }
 
 func (h *SingleRoundLeaderElector) myIdentity() string {
