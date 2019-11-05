@@ -28,6 +28,7 @@ func main() {
 	var leaseDuration time.Duration
 	var renewDeadline time.Duration
 	var retryPeriod time.Duration
+	var initialWait bool
 	var versionFlag bool
 
 	klog.InitFlags(nil)
@@ -36,6 +37,7 @@ func main() {
 	flag.DurationVar(&leaseDuration, "lease-duration", 10*time.Second, "lease duration of leader lease")
 	flag.DurationVar(&renewDeadline, "renew-deadline", 5*time.Second, "deadline for renewing leader lease")
 	flag.DurationVar(&retryPeriod, "retry-period", 1*time.Second, "retry period for acquiring leader lease")
+	flag.BoolVar(&initialWait, "initial-wait", false, "wait for the old lease being expired if no leader exist.")
 	flag.BoolVar(&versionFlag, "version", false, "display version and exit")
 	flag.Parse()
 	taskCmd := flag.Args()
@@ -48,7 +50,14 @@ func main() {
 	}
 
 	log.Info("k8s-leader-elector", "version", Version, "revision", Revision)
-
+	log.V(2).Info("configured options",
+		"name", name,
+		"namespace", namespace,
+		"lease-duration", leaseDuration.String(),
+		"renew-deadline", renewDeadline.String(),
+		"retry-period", retryPeriod.String(),
+		"initial-wait", initialWait,
+	)
 	clientConfig := config.GetConfigOrDie()
 
 	elector, err := NewSingleRoundLeaderElector(
@@ -56,6 +65,7 @@ func main() {
 		name, namespace,
 		taskCmd,
 		leaseDuration, renewDeadline, retryPeriod,
+		initialWait,
 	)
 	if err != nil {
 		log.Error(err, "can't create leader-elector")

@@ -38,6 +38,7 @@ type SingleRoundLeaderElector struct {
 	leaseDuration      time.Duration
 	renewDeadline      time.Duration
 	retryPeriod        time.Duration
+	initialWait        bool
 	resourceLock       resourcelock.Interface
 	// This mutex protects 'role' and 'observedLeaderIdentity'
 	sync.RWMutex
@@ -53,7 +54,8 @@ func NewSingleRoundLeaderElector(
 	taskCmd []string,
 	leaseDuration time.Duration,
 	renewDeadline time.Duration,
-	retryPeriod time.Duration) (*SingleRoundLeaderElector, error) {
+	retryPeriod time.Duration,
+	initialWait bool) (*SingleRoundLeaderElector, error) {
 	recorderProvider, err := NewRecorderProvider(config, scheme.Scheme, logger.WithName("recorder-provider"))
 	if err != nil {
 		return nil, err
@@ -81,6 +83,7 @@ func NewSingleRoundLeaderElector(
 		renewDeadline:      renewDeadline,
 		retryPeriod:        retryPeriod,
 		resourceLock:       resourceLock,
+		initialWait:        initialWait,
 	}, nil
 }
 
@@ -220,6 +223,13 @@ func (h *SingleRoundLeaderElector) startLeaderElection(ctx context.Context) erro
 	})
 	if err != nil {
 		return err
+	}
+
+	if h.initialWait {
+		h.logger.V(2).Info("wait for the old lease being expired if no leader exist",
+			"duration(=lease-duration+renew-deadline)", (h.leaseDuration + h.renewDeadline).String(),
+		)
+		time.Sleep(h.leaseDuration + h.renewDeadline)
 	}
 
 	// Start the leader election
