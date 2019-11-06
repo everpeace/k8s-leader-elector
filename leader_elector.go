@@ -110,6 +110,7 @@ func (h *SingleRoundLeaderElector) startLeaderElection(ctx context.Context) erro
 					}
 					h.logger.Info("I'm elected as the leader", "newLeaderIdentity", h.myIdentity(), "myIdentity", h.myIdentity())
 					go h.doTask(_ctx)
+					return
 				case RoleFollower:
 					err := errors.New("another leader was newly elected (i.e. the current leadership was lost). this will exit because this is single round leader-elector")
 					h.logger.Error(
@@ -119,6 +120,7 @@ func (h *SingleRoundLeaderElector) startLeaderElection(ctx context.Context) erro
 						"myIdentity", h.myIdentity(),
 					)
 					h.taskCompletionChan <- err
+					return
 				default:
 					err := errors.New("callback=OnStartedLeading was called all though my role is invalid.")
 					h.logger.Error(
@@ -126,6 +128,7 @@ func (h *SingleRoundLeaderElector) startLeaderElection(ctx context.Context) erro
 						"role", h.role,
 					)
 					h.taskCompletionChan <- err
+					return
 				}
 			},
 			OnStoppedLeading: func() {
@@ -142,12 +145,14 @@ func (h *SingleRoundLeaderElector) startLeaderElection(ctx context.Context) erro
 						"role", h.role,
 					)
 					h.taskCompletionChan <- err
+					return
 				default:
 					err := errors.New(fmt.Sprintf("callback=OnStoppedLeading was called all though my role is %s", h.role))
 					h.logger.Error(
 						err, "this should never happen. maybe bug.",
 						"role", h.role,
 					)
+					return
 				}
 			},
 			OnNewLeader: func(newLeaderIdentity string) {
@@ -230,6 +235,7 @@ func (h *SingleRoundLeaderElector) startLeaderElection(ctx context.Context) erro
 						errors.Errorf("OnNewLeader callback was called with role=%v", h.role),
 						"this should never happen",
 					)
+					return
 				}
 			},
 		},
@@ -276,9 +282,6 @@ func (h *SingleRoundLeaderElector) myIdentity() string {
 }
 
 func (h *SingleRoundLeaderElector) doTask(ctx context.Context) {
-	h.RLock()
-	defer h.RUnlock()
-
 	environs := []string{
 		fmt.Sprintf("__K8S_LEADER_ELECTOR_ROLE=%s", h.role),
 		fmt.Sprintf("__K8S_LEADER_ELECTOR_MY_IDENTITY=%s", h.resourceLock.Identity()),
